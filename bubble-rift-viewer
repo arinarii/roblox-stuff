@@ -1,0 +1,106 @@
+local riftsFolder = game.Workspace.Rendered.Rifts
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- GUI Setup
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "RiftGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- Main frame for the list
+local listFrame = Instance.new("TextLabel")
+listFrame.Name = "RiftList"
+listFrame.Size = UDim2.new(0, 800, 0.3, 0)
+listFrame.Position = UDim2.new(0.5, -400, 0, 0)
+listFrame.BackgroundTransparency = 0.3
+listFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+listFrame.TextColor3 = Color3.new(1, 1, 1)
+listFrame.TextXAlignment = Enum.TextXAlignment.Left
+listFrame.TextYAlignment = Enum.TextYAlignment.Top
+listFrame.TextWrapped = true
+listFrame.TextScaled = false
+listFrame.Font = Enum.Font.Code
+listFrame.TextSize = 18
+listFrame.ClipsDescendants = true
+listFrame.Text = "Loading..."
+listFrame.Parent = screenGui
+
+-- Minimized toggle button
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.Size = UDim2.new(0, 150, 0, 30)
+toggleButton.Position = UDim2.new(0, 10, 0, 10)
+toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+toggleButton.Font = Enum.Font.SourceSans
+toggleButton.TextSize = 20
+toggleButton.Text = "Hide Rifts"
+toggleButton.Parent = screenGui
+
+local minimized = false
+
+toggleButton.MouseButton1Click:Connect(function()
+    if minimized then
+        -- Expand
+        listFrame.Visible = true
+        toggleButton.Text = "Hide Rifts"
+        toggleButton.Position = UDim2.new(0, 10, 0, 10)
+    else
+        -- Minimize
+        listFrame.Visible = false
+        toggleButton.Text = "Show Rifts"
+        toggleButton.Position = UDim2.new(0, 10, 0, 10)
+    end
+    minimized = not minimized
+end)
+
+-- Helper function to wait for a child with timeout
+local function waitForChildWithTimeout(parent, childName, timeout)
+    local startTime = tick()
+    while tick() - startTime < timeout do
+        local child = parent:FindFirstChild(childName)
+        if child then
+            return child
+        end
+        wait(0.1)
+    end
+    return nil
+end
+
+-- Function to gather and display rift data
+local function printRifts()
+    local result = {}
+    table.insert(result, "----==============")
+    for _, rift in ipairs(riftsFolder:GetChildren()) do
+        local display = waitForChildWithTimeout(rift, "Display", 1)
+        if display then
+            local surfaceGui = waitForChildWithTimeout(display, "SurfaceGui", 1)
+            if surfaceGui then
+                local icon = waitForChildWithTimeout(surfaceGui, "Icon", 1)
+                if icon then
+                    local luck = icon:FindFirstChild("Luck")
+                    if luck then
+                        table.insert(result, rift.Name .. " - " .. luck.Text .. " - " .. (display.Position.Y + 9) .. " - " .. (display.SurfaceGui.Timer.Text))
+                    else
+                        table.insert(result, rift.Name .. " - " .. (display.Position.Y + 9))
+                    end
+                else
+                    table.insert(result, rift.Name .. " - " .. (display.Position.Y + 9))
+                end
+            else
+                table.insert(result, rift.Name .. " - " .. (display.Position.Y + 9))
+            end
+        else
+            table.insert(result, rift.Name .. " - Display Missing")
+        end
+    end
+    table.insert(result, "----==============")
+    listFrame.Text = table.concat(result, "\n")
+end
+
+-- Initial run and updates on changes
+printRifts()
+riftsFolder.ChildAdded:Connect(printRifts)
+riftsFolder.ChildRemoved:Connect(printRifts)
