@@ -1,6 +1,3 @@
-
-
-
 local riftsFolder = game.Workspace.Rendered.Rifts
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -88,22 +85,17 @@ local function printRifts()
                 local icon = waitForChildWithTimeout(surfaceGui, "Icon", 1)
                 if icon then
                     local luck = icon:FindFirstChild("Luck")
-                    local luckText = luck and luck.Text or "N/A"
-                    local riftInfo = rift.Name .. " - " .. luckText .. " - " .. (display.Position.Y + 9)
-
-                    local timerText = ""
-                    local timer = display.SurfaceGui:FindFirstChild("Timer")
-                    if timer then
-                        timerText = " - " .. timer.Text
-                        riftInfo = riftInfo .. timerText
-                    end
-
-                    table.insert(result, riftInfo)
-
-                    -- Play sound if rift meets criteria, only once per rift
-                    if (luckText == "x25" or rift.Name == "aura-egg") and not soundPlayedFor[rift] then
-                        bellSound:Play()
-                        soundPlayedFor[rift] = true
+                    if luck then
+                        local luckText = luck.Text
+                        table.insert(result, rift.Name .. " - " .. luckText .. " - " .. (display.Position.Y + 9) .. " - " .. (display.SurfaceGui.Timer.Text))
+                        
+                        -- Only play the sound once per unique rift with x25
+                        if luckText == "x25" and not soundPlayedFor[rift] then
+                            bellSound:Play()
+                            soundPlayedFor[rift] = true
+                        end
+                    else
+                        table.insert(result, rift.Name .. " - " .. (display.Position.Y + 9))
                     end
                 else
                     table.insert(result, rift.Name .. " - " .. (display.Position.Y + 9))
