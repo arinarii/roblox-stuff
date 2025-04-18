@@ -1,79 +1,3 @@
-local riftsFolder = game.Workspace.Rendered.Rifts
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-
--- GUI Setup
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "RiftGui"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
-
--- Sound setup (Taco Bell bell sound)
-local bellSound = Instance.new("Sound")
-bellSound.SoundId = "rbxassetid://6832470734"
-bellSound.Volume = 1
-bellSound.Parent = screenGui
-
-local soundPlayedFor = {}
-
--- Main frame for the list
-local listFrame = Instance.new("TextLabel")
-listFrame.Name = "RiftList"
-listFrame.Size = UDim2.new(0, 800, 0.3, 0)
-listFrame.Position = UDim2.new(0.5, -400, 0, 0)
-listFrame.BackgroundTransparency = 0.3
-listFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-listFrame.TextColor3 = Color3.new(1, 1, 1)
-listFrame.TextXAlignment = Enum.TextXAlignment.Left
-listFrame.TextYAlignment = Enum.TextYAlignment.Top
-listFrame.TextWrapped = true
-listFrame.TextScaled = false
-listFrame.Font = Enum.Font.Code
-listFrame.TextSize = 18
-listFrame.ClipsDescendants = true
-listFrame.Text = "Loading..."
-listFrame.Parent = screenGui
-
--- Minimized toggle button
-local toggleButton = Instance.new("TextButton")
-toggleButton.Name = "ToggleButton"
-toggleButton.Size = UDim2.new(0, 150, 0, 30)
-toggleButton.Position = UDim2.new(0, 10, 0, 10)
-toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-toggleButton.TextColor3 = Color3.new(1, 1, 1)
-toggleButton.Font = Enum.Font.SourceSans
-toggleButton.TextSize = 20
-toggleButton.Text = "Hide Rifts"
-toggleButton.Parent = screenGui
-
-local minimized = false
-
-toggleButton.MouseButton1Click:Connect(function()
-    if minimized then
-        listFrame.Visible = true
-        toggleButton.Text = "Hide Rifts"
-        toggleButton.Position = UDim2.new(0, 10, 0, 10)
-    else
-        listFrame.Visible = false
-        toggleButton.Text = "Show Rifts"
-        toggleButton.Position = UDim2.new(0, 10, 0, 10)
-    end
-    minimized = not minimized
-end)
-
-local function waitForChildWithTimeout(parent, childName, timeout)
-    local startTime = tick()
-    while tick() - startTime < timeout do
-        local child = parent:FindFirstChild(childName)
-        if child then
-            return child
-        end
-        wait(0.1)
-    end
-    return nil
-end
-
 local function printRifts()
     local result = {}
     table.insert(result, "----==============")
@@ -85,17 +9,22 @@ local function printRifts()
                 local icon = waitForChildWithTimeout(surfaceGui, "Icon", 1)
                 if icon then
                     local luck = icon:FindFirstChild("Luck")
-                    if luck then
-                        local luckText = luck.Text
-                        table.insert(result, rift.Name .. " - " .. luckText .. " - " .. (display.Position.Y + 9) .. " - " .. (display.SurfaceGui.Timer.Text))
-                        
-                        -- Only play the sound once per unique rift with x25
-                        if luckText == "x25" and not soundPlayedFor[rift] then
-                            bellSound:Play()
-                            soundPlayedFor[rift] = true
-                        end
-                    else
-                        table.insert(result, rift.Name .. " - " .. (display.Position.Y + 9))
+                    local luckText = luck and luck.Text or "N/A"
+                    local riftInfo = rift.Name .. " - " .. luckText .. " - " .. (display.Position.Y + 9)
+
+                    local timerText = ""
+                    local timer = display.SurfaceGui:FindFirstChild("Timer")
+                    if timer then
+                        timerText = " - " .. timer.Text
+                        riftInfo = riftInfo .. timerText
+                    end
+
+                    table.insert(result, riftInfo)
+
+                    -- Play sound if rift meets criteria, only once per rift
+                    if (luckText == "x25" or rift.Name == "aura-egg") and not soundPlayedFor[rift] then
+                        bellSound:Play()
+                        soundPlayedFor[rift] = true
                     end
                 else
                     table.insert(result, rift.Name .. " - " .. (display.Position.Y + 9))
@@ -110,13 +39,3 @@ local function printRifts()
     table.insert(result, "----==============")
     listFrame.Text = table.concat(result, "\n")
 end
-
--- Initial run and updates on changes
-printRifts()
-riftsFolder.ChildAdded:Connect(printRifts)
-riftsFolder.ChildRemoved:Connect(printRifts)
-
-game:GetService("Players").LocalPlayer.Idled:Connect(function()
-    game:GetService("VirtualUser"):CaptureController()
-    game:GetService("VirtualUser"):ClickButton2(Vector2.new())
-end)
