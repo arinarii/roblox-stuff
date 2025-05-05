@@ -1,0 +1,89 @@
+local player = game.Players.LocalPlayer
+local runService = game:GetService("RunService")
+local workspace = game.Workspace
+
+-- Egg spawn folders
+local easterIslandFolder = workspace:WaitForChild("Easter"):WaitForChild("EASTER ISLAND EGG SPAWNS")
+local mapEggSpawnsFolder = workspace:WaitForChild("Map"):WaitForChild("EGG_SPAWNS")
+
+-- Combine all spawn parts
+local eggSpawns = {}
+
+-- Add direct EGGSPAWN parts from Easter folder
+for _, part in ipairs(easterIslandFolder:GetChildren()) do
+	if part:IsA("Part") and part.Name == "EGGSPAWN" then
+		table.insert(eggSpawns, part)
+	end
+end
+
+-- Add all randomly named parts from map egg spawns
+for _, part in ipairs(mapEggSpawnsFolder:GetChildren()) do
+	if part:IsA("Part") then
+		table.insert(eggSpawns, part)
+	end
+end
+
+-- Create BillboardGui
+local function createBillboard(parent, eggName)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "EggESP"
+	billboard.Size = UDim2.new(0, 100, 0, 50)
+	billboard.AlwaysOnTop = true
+	billboard.Adornee = parent
+	billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = Color3.new(1, 1, 0)
+	label.TextStrokeTransparency = 0.5
+	label.Text = eggName
+	label.TextScaled = true
+	label.Font = Enum.Font.SourceSansBold
+	label.Parent = billboard
+
+	billboard.Parent = parent
+end
+
+-- Update loop per spawn
+local function monitorEggSpawn(spawnPart)
+	runService.RenderStepped:Connect(function()
+		local egg = nil
+		for _, child in ipairs(spawnPart:GetChildren()) do
+			if child:IsA("Model") or child:IsA("Part") or child:IsA("MeshPart") then
+				egg = child
+				break
+			end
+		end
+
+		if egg then
+			local eggName = egg.Name
+
+			-- If the egg has a Mesh, use that name
+			local mesh = egg:FindFirstChildWhichIsA("SpecialMesh")
+			if mesh and mesh.Name and mesh.Name ~= "" then
+				eggName = mesh.Name
+			end
+
+			if not spawnPart:FindFirstChild("EggESP") then
+				createBillboard(spawnPart, eggName)
+			else
+				-- Update text if changed
+				local esp = spawnPart:FindFirstChild("EggESP")
+				if esp and esp:FindFirstChildOfClass("TextLabel") then
+					esp.TextLabel.Text = eggName
+				end
+			end
+		else
+			local existingESP = spawnPart:FindFirstChild("EggESP")
+			if existingESP then
+				existingESP:Destroy()
+			end
+		end
+	end)
+end
+
+-- Start monitoring all spawn parts
+for _, spawnPart in ipairs(eggSpawns) do
+	monitorEggSpawn(spawnPart)
+end
